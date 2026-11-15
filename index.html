@@ -90,6 +90,15 @@
   .drow .w{font-size:12px;color:var(--mut)}
   .drow .a{font-weight:800;font-size:18px;direction:ltr;color:#fbbf24}
   .drow .x{background:none;color:var(--mut);font-size:16px;padding:4px 6px}
+  .det{background:#0b1220;border-radius:12px;padding:12px;margin:-4px 0 4px;font-size:14px;line-height:1.5;border:1px solid var(--line)}
+  .det .h{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:15px}
+  .det .dm{color:var(--mut);font-size:13px}
+  .det .it{border-top:1px solid var(--line);padding:8px 0}
+  .det .it b{font-size:15px}
+  .det .nm{color:#fbbf24;font-weight:600}
+  .det a.ph{color:var(--acc);text-decoration:none;font-weight:700}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-inline-start:4px}
+  .tag.ok{background:#14532d;color:#86efac} .tag.no{background:#422006;color:#fcd34d} .tag.x{background:#450a0a;color:#fca5a5}
   .shop{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#04202d;background:#95bf47;border-radius:8px;padding:3px 8px;text-decoration:none}
 </style>
 </head>
@@ -205,6 +214,35 @@ async function gh(method, body){
   return r;
 }
 
+let orders=null, ordersAt=0, openDet=new Set();
+async function loadOrders(force){
+  if(!token || (!force && Date.now()-ordersAt<120000)) return;
+  try{
+    const r=await fetch(`https://api.github.com/repos/${OWNER}/${DATA_REPO}/contents/orders.json?t=`+Date.now(),{cache:'no-store',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'}});
+    if(!r.ok) return;
+    const j=await r.json(); orders=JSON.parse(b64dec(j.content)); ordersAt=Date.now(); renderDep();
+  }catch(e){}
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function detailsHTML(num){
+  const o = orders && orders.orders && orders.orders[String(num)];
+  const link = `<a class="shop" target="_blank" rel="noopener" href="${SHOP_ADMIN}?query=${encodeURIComponent(num)}">Open in Shopify ↗</a>`;
+  if(!orders) return `<div class="det"><div class="dm">Loading order details…</div></div>`;
+  if(!o) return `<div class="det"><div class="dm">Order #${esc(num)} isn't in the synced list yet.</div>${link}</div>`;
+  const pay = o.payment==='PAID'?'<span class="tag ok">Paid</span>':o.payment==='VOIDED'?'<span class="tag x">Voided</span>':'<span class="tag no">'+esc(o.payment==='PENDING'?'COD / pending':o.payment)+'</span>';
+  const ful = o.cancelled?'<span class="tag x">Cancelled</span>':o.fulfillment==='FULFILLED'?'<span class="tag ok">Fulfilled</span>':'<span class="tag no">Unfulfilled</span>';
+  const items = o.items.map(it=>`<div class="it"><b>${it.qty>1?it.qty+'× ':''}${esc(it.title)}</b>${it.variant?' — '+esc(it.variant):''}${it.details?`<div class="nm">${esc(it.details)}</div>`:''}</div>`).join('');
+  const tel = String(o.phone||'').replace(/[^\d+]/g,'');
+  return `<div class="det">
+    <div class="h"><span>#${esc(num)} · ${esc(o.customer)}</span><span>${pay}${ful}</span></div>
+    <div class="dm">${esc(o.date)}${o.phone?` · <a class="ph" href="tel:${tel}">${esc(o.phone)}</a>`:''}</div>
+    <div class="dm">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
+    ${items}
+    <div class="it"><b>Total ${fmt(o.total)}</b> · Due on delivery <b>${fmt(o.due)}</b></div>
+    ${o.note?`<div class="dm">📝 ${esc(o.note)}</div>`:''}
+    ${link}
+  </div>`;
+}
 async function load(){
   const r = await gh('GET');
   if(r.status===404){ sha=null; state={tx:[],deposits:[]}; return 'missing'; }
@@ -276,7 +314,7 @@ async function refresh(silent){
     } else if(!state.depInit){
       await mutate(seedDeposits, 'Add deposits from notebook');
     }
-    dot('ok'); render();
+    dot('ok'); render(); loadOrders();
   }catch(e){
     dot('bad');
     if(e.message==='auth'){ showSetup('Token not working or has no access to '+DATA_REPO); }
@@ -324,7 +362,7 @@ function renderDep(){
   $('dShown').textContent = q||dFilter!=='all' ? shown.length+' of '+deps.length : '';
   const list=$('dList'); list.innerHTML='';
   if(!shown.length){
-    list.innerHTML = q ? '<div class="msg">No deposit for order #'+q+'<br>If they paid, enter the amount above and tap + Add</div>' : '<div class="msg">No orders here</div>';
+    list.innerHTML = q ? '<div class="msg">No deposit for order #'+q+'<br>If they paid, enter the amount above and tap + Add</div>'+(orders&&orders.orders&&orders.orders[q]?detailsHTML(q):'') : '<div class="msg">No orders here</div>';
     if(q && (!$('dOrd').value || $('dOrd').value===renderDep.auto)){ $('dOrd').value=q; renderDep.auto=q; }
     return;
   }
@@ -335,12 +373,14 @@ function renderDep(){
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
     w.textContent = d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet';
-    const sl=document.createElement('a'); sl.className='shop'; sl.textContent='🛍 Order details'; sl.target='_blank'; sl.rel='noopener'; sl.href=SHOP_ADMIN+'?query='+encodeURIComponent(d.order);
+    const sl=document.createElement('button'); sl.className='shop'; sl.style.border='0'; sl.textContent=openDet.has(d.id)?'▲ Hide details':'🛍 Order details';
+    sl.onclick=()=>{ openDet.has(d.id)?openDet.delete(d.id):openDet.add(d.id); loadOrders(); renderDep(); };
     i.append(o,w,sl);
     const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
     x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?'+((state.tx||[]).some(t=>t.depId===d.id)?' It will also be removed from Cash.':''), s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); s.tx=s.tx.filter(t=>t.depId!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
     el.append(c,i,a,x); list.appendChild(el);
+    if(openDet.has(d.id) || (q && String(d.order)===q && shown.length===1)){ const dv=document.createElement('div'); dv.innerHTML=detailsHTML(d.order); list.appendChild(dv.firstElementChild); }
   });
 }
 async function toggleDep(d){
