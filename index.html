@@ -218,7 +218,8 @@ async function gh(method, body){
 
 let orders=null, ordersAt=0, openDet=new Set();
 async function loadOrders(force){
-  if(!token || (!force && Date.now()-ordersAt<120000)) return;
+  const need=(state.deposits||[]).some(d=>!d.done && !(orders&&orders.orders&&orders.orders[String(d.order)]));
+  if(!token || (!force && Date.now()-ordersAt < (need?20000:120000))) return;
   try{
     const r=await fetch(`https://api.github.com/repos/${OWNER}/${DATA_REPO}/contents/orders.json?t=`+Date.now(),{cache:'no-store',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'}});
     if(!r.ok) return;
@@ -230,7 +231,7 @@ function detailsHTML(num){
   const o = orders && orders.orders && orders.orders[String(num)];
   const link = `<a class="shop" target="_blank" rel="noopener" href="${SHOP_ADMIN}?query=${encodeURIComponent(num)}">Open in Shopify ↗</a>`;
   if(!orders) return `<div class="det"><div class="dm">Loading order details…</div></div>`;
-  if(!o) return `<div class="det"><div class="dm">Order #${esc(num)} isn't in the synced list yet.</div>${link}</div>`;
+  if(!o) return `<div class="det"><div class="dm">Getting order #${esc(num)} from Shopify… it shows up here within a minute or two.</div>${link}</div>`;
   const pay = o.payment==='PAID'?'<span class="tag ok">Paid</span>':o.payment==='VOIDED'?'<span class="tag x">Voided</span>':'<span class="tag no">'+esc(o.payment==='PENDING'?'COD / pending':o.payment)+'</span>';
   const ful = o.cancelled?'<span class="tag x">Cancelled</span>':o.fulfillment==='FULFILLED'?'<span class="tag ok">Fulfilled</span>':'<span class="tag no">Unfulfilled</span>';
   const items = o.items.map(it=>`<div class="it"><b>${it.qty>1?it.qty+'× ':''}${esc(it.title)}</b>${it.variant?' — '+esc(it.variant):''}${it.details?`<div class="nm">${esc(it.details)}</div>`:''}</div>`).join('');
@@ -410,7 +411,7 @@ async function addDep(){
   const rec={id:'d-'+order+'-'+Date.now().toString(36),order,amount,done:false,doneBy:'',doneAt:0,by:myName||'',at:Date.now()};
   try{
     const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)){ s.deposits.push(rec); s.tx.push({id:'tx-'+rec.id,amount,type:'+',note:'Deposit #'+order,by:myName||'',at:rec.at,depId:rec.id}); } }, 'Deposit #'+order+' '+amount+' ('+(myName||'')+')');
-    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓ · +'+fmt(amount)+' to Cash'); } else toast('Save failed — try again');
+    if(ok){ openDet.add(rec.id); $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓ · +'+fmt(amount)+' to Cash'); } else toast('Save failed — try again');
   }catch(e){ toast('Save failed — check your internet'); }
   busy=false; $('dAdd').disabled=false; render();
 }
