@@ -130,6 +130,7 @@
   <div id="vCash">
   <div class="bal">
     <button class="gear" id="gear" title="Settings">⚙︎</button>
+    <button class="gear" id="bell" title="Notifications" style="left:44px">🔕</button>
     <button class="ref" id="ref" title="Refresh">↻</button>
     <small><span class="live" id="dot"></span>Cash balance</small>
     <div class="n" id="bal">—</div>
@@ -163,6 +164,7 @@
   <input id="nm" type="text" placeholder="e.g. Ahmed" maxlength="20">
   <label>GitHub token</label>
   <input id="tok" type="password" placeholder="github_pat_..." autocomplete="off">
+  <div class="r"><button id="notif" style="background:#334155;color:#fff">🔔 Turn on notifications</button></div>
   <div class="r"><button class="go" id="save">Save & start</button></div>
   <p id="setupErr" style="color:#fca5a5"></p>
 </div></div>
@@ -177,6 +179,7 @@
 const OWNER = 'bavelly';
 const DATA_REPO = 'khazna-data';
 const FILE = 'data.json';
+const VAPID_PUBLIC = 'BNDzjdr7OM6tv9-Wh6fswvhkGW3rqw1HXtsFUQxQevqZYvz7ys5c4SyqBFkE8nhV8p1iu4kBYIepz1_0OOUGL-8';
 const SHOP_ADMIN = 'https://admin.shopify.com/store/przmstore/orders';
 const OPENING = 252000;   // opening balance if the data file does not exist yet
 // Deposits from the notebook (order #, deposit, shipped?)
@@ -445,6 +448,53 @@ $('bm').onclick=()=>add('-');
 
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) refresh(true); });
 setInterval(()=>{ if(!document.hidden) refresh(true); }, 20000);
+
+// ====== Notifications ======
+function b64url(s){ const p='='.repeat((4-s.length%4)%4); const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); }
+const SUBS_API = `https://api.github.com/repos/${OWNER}/${DATA_REPO}/contents/subs.json`;
+async function saveSub(sub){
+  const rec={name:myName||'',endpoint:sub.endpoint,keys:sub.keys,at:Date.now()};
+  for(let i=0;i<4;i++){
+    let cur={subs:[]}, csha=null;
+    const g=await fetch(SUBS_API+'?t='+Date.now(),{cache:'no-store',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'}});
+    if(g.ok){ const j=await g.json(); csha=j.sha; try{ cur=JSON.parse(b64dec(j.content)); }catch(e){} }
+    else if(g.status!==404) throw new Error('auth');
+    cur.subs=(cur.subs||[]).filter(s=>s.endpoint!==rec.endpoint); cur.subs.push(rec);
+    const body={message:'Notifications on ('+(myName||'')+')',content:b64enc(JSON.stringify(cur,null,1))}; if(csha) body.sha=csha;
+    const p=await fetch(SUBS_API,{method:'PUT',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+    if(p.ok) return true;
+    if(p.status!==409&&p.status!==422) throw new Error('http '+p.status);
+  }
+  return false;
+}
+async function swReg(){ if(!('serviceWorker' in navigator)) return null; try{ return await navigator.serviceWorker.register('sw.js'); }catch(e){ return null; } }
+async function bellState(){
+  let on=false;
+  try{ const reg=await navigator.serviceWorker.getRegistration(); const s=reg&&await reg.pushManager.getSubscription(); on=!!s && Notification.permission==='granted'; }catch(e){}
+  $('bell').textContent=on?'🔔':'🔕';
+  $('notif').textContent=on?'🔔 Notifications are on':'🔔 Turn on notifications';
+  return on;
+}
+async function enablePush(){
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent), standalone=window.navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+    toast(isIOS&&!standalone?'Add Khazna to your Home Screen first, then open it from there':'This browser does not support notifications'); return;
+  }
+  if(!token||!myName){ toast('Save your name and token first'); return; }
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){ toast('Notifications are blocked — allow them in settings'); return; }
+    const reg=await swReg(); await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64url(VAPID_PUBLIC)});
+    const ok=await saveSub(sub.toJSON());
+    toast(ok?'🔔 Notifications on':'Could not save — try again');
+  }catch(e){ toast('Could not turn on notifications'); }
+  bellState();
+}
+$('bell').onclick=enablePush;
+$('notif').onclick=enablePush;
+swReg().then(bellState);
 
 if(!token||!myName) showSetup(); else refresh();
 </script>
