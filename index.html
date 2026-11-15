@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="الخزنة">
+<meta name="apple-mobile-web-app-title" content="Khazna">
 <meta name="theme-color" content="#0f172a">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<title>الخزنة</title>
+<title>Khazna</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mut:#94a3b8;--plus:#22c55e;--minus:#ef4444;--acc:#38bdf8}
@@ -94,86 +94,86 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="tabs"><button id="tCash" class="on">💰 الخزنة</button><button id="tDep">📦 العرابين</button></div>
+  <div class="tabs"><button id="tCash" class="on">💰 Cash</button><button id="tDep">📦 Deposits</button></div>
 
   <div id="vDep" class="hide">
     <div class="card" style="margin-top:0">
-      <input id="dq" type="text" inputmode="numeric" placeholder="🔍 رقم الأوردر" autocomplete="off">
-      <div class="seg"><button data-f="all" class="on">الكل</button><button data-f="open">لسه</button><button data-f="done">اتشحن ✓</button></div>
+      <input id="dq" type="text" inputmode="numeric" placeholder="🔍 Order number" autocomplete="off">
+      <div class="seg"><button data-f="all" class="on">All</button><button data-f="open">Open</button><button data-f="done">Shipped ✓</button></div>
       <div class="dsum">
-        <div>إجمالي العرابين<b id="dTot">0</b></div>
-        <div class="w">لسه مااتشحنش<b id="dOpen">0</b></div>
-        <div>عدد الأوردرات<b id="dCnt">0</b></div>
+        <div>Total deposits<b id="dTot">0</b></div>
+        <div class="w">Not shipped yet<b id="dOpen">0</b></div>
+        <div>Orders<b id="dCnt">0</b></div>
       </div>
       <div class="addrow">
-        <input id="dOrd" type="text" inputmode="numeric" placeholder="رقم الأوردر">
-        <input id="dAmt" type="text" inputmode="decimal" placeholder="العربون">
-        <button id="dAdd">+ ضيف</button>
+        <input id="dOrd" type="text" inputmode="numeric" placeholder="Order #">
+        <input id="dAmt" type="text" inputmode="decimal" placeholder="Deposit">
+        <button id="dAdd">+ Add</button>
       </div>
     </div>
-    <h3><span>الأوردرات اللي دافعة عربون</span><span id="dShown"></span></h3>
-    <div class="list" id="dList"><div class="msg">جاري التحميل…</div></div>
+    <h3><span>Orders with a deposit</span><span id="dShown"></span></h3>
+    <div class="list" id="dList"><div class="msg">Loading…</div></div>
   </div>
 
   <div id="vCash">
   <div class="bal">
-    <button class="gear" id="gear" title="الإعدادات">⚙︎</button>
-    <button class="ref" id="ref" title="تحديث">↻</button>
-    <small><span class="live" id="dot"></span>رصيد الخزنة</small>
+    <button class="gear" id="gear" title="Settings">⚙︎</button>
+    <button class="ref" id="ref" title="Refresh">↻</button>
+    <small><span class="live" id="dot"></span>Cash balance</small>
     <div class="n" id="bal">—</div>
     <div class="sub">
-      <div>إجمالي الداخل<b id="tin">0</b></div>
-      <div>إجمالي الخارج<b id="tout">0</b></div>
+      <div>Total in<b id="tin">0</b></div>
+      <div>Total out<b id="tout">0</b></div>
     </div>
   </div>
 
   <div class="card">
     <input id="amt" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
     <div class="quick" id="quick"></div>
-    <input id="note" type="text" placeholder="ملاحظة (اختياري) — مثلاً: بيع، خامات، شحن" autocomplete="off" maxlength="80">
+    <input id="note" type="text" placeholder="Note (optional)" autocomplete="off" maxlength="80">
     <div class="btns">
-      <button class="big p" id="bp">+<span>دخل الخزنة</span></button>
-      <button class="big m" id="bm">−<span>خرج من الخزنة</span></button>
+      <button class="big p" id="bp">+<span>Money in</span></button>
+      <button class="big m" id="bm">−<span>Money out</span></button>
     </div>
   </div>
 
-  <h3><span>آخر الحركات</span><span id="cnt"></span></h3>
-  <div class="list" id="list"><div class="msg">جاري التحميل…</div></div>
+  <h3><span>Recent transactions</span><span id="cnt"></span></h3>
+  <div class="list" id="list"><div class="msg">Loading…</div></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <div class="dlg" id="setup"><div class="box">
-  <h2>إعداد أول مرة</h2>
-  <p>اكتب اسمك والـ token اللي عملته على GitHub. ده بيتعمل مرة واحدة بس على كل موبايل.</p>
-  <label>اسمك</label>
-  <input id="nm" type="text" placeholder="مثلاً: أحمد" maxlength="20">
+  <h2>First-time setup</h2>
+  <p>Enter your name and the GitHub token. You only do this once on each phone.</p>
+  <label>Your name</label>
+  <input id="nm" type="text" placeholder="e.g. Ahmed" maxlength="20">
   <label>GitHub token</label>
   <input id="tok" type="password" placeholder="github_pat_..." autocomplete="off">
-  <div class="r"><button class="go" id="save">حفظ ودخول</button></div>
+  <div class="r"><button class="go" id="save">Save & start</button></div>
   <p id="setupErr" style="color:#fca5a5"></p>
 </div></div>
 
 <div class="dlg" id="dlg"><div class="box" style="text-align:center">
-  <p id="dlgTxt" style="color:var(--txt);font-size:16px">تمسح الحركة دي؟</p>
-  <div class="r"><button id="dlgNo">لا</button><button class="del" id="dlgYes">امسح</button></div>
+  <p id="dlgTxt" style="color:var(--txt);font-size:16px">Delete this transaction?</p>
+  <div class="r"><button id="dlgNo">No</button><button class="del" id="dlgYes">Delete</button></div>
 </div></div>
 
 <script>
-// ====== الإعدادات ======
+// ====== Settings ======
 const OWNER = 'bavelly';
 const DATA_REPO = 'khazna-data';
 const FILE = 'data.json';
-const OPENING = 252000;   // رصيد البداية لو الملف لسه مش موجود
-// العرابين اللي في الكشكول (رقم الأوردر، العربون، اتشحن؟)
+const OPENING = 252000;   // opening balance if the data file does not exist yet
+// Deposits from the notebook (order #, deposit, shipped?)
 const DEP_SEED = [[1309,700,1],[1314,300,1],[1313,300,1],[1319,300,1],[1320,300,1],[1323,300,1],[1321,300,1],[1324,300,1],[1329,300,1],[1340,500,0],[1341,300,1],[1343,300,1],[1344,300,1],[1342,300,1],[1346,300,1],[1350,300,0],[1353,300,1],[1355,300,1]];
 // =======================
 function seedDeposits(s){
   if(s.depInit) return;
   const have=new Set((s.deposits||[]).map(d=>String(d.order)));
   const now=Date.now();
-  DEP_SEED.forEach(([o,a,d],i)=>{ if(have.has(String(o))) return; s.deposits.push({id:'d-'+o,order:String(o),amount:a,done:!!d,doneBy:d?'الكشكول':'',doneAt:d?now:0,by:'الكشكول',at:now+i}); });
+  DEP_SEED.forEach(([o,a,d],i)=>{ if(have.has(String(o))) return; s.deposits.push({id:'d-'+o,order:String(o),amount:a,done:!!d,doneBy:d?'Notebook':'',doneAt:d?now:0,by:'Notebook',at:now+i}); });
   s.depInit=true;
 }
 
@@ -191,7 +191,7 @@ function parseAmt(s){
   s=String(s||'').trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫,]/g,'.').replace(/[^\d.]/g,'');
   const n=parseFloat(s); return isFinite(n)&&n>0 ? Math.round(n*100)/100 : 0;
 }
-function when(ts){ const d=new Date(ts); if(isNaN(d)) return ''; return d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'numeric',minute:'2-digit'}); }
+function when(ts){ const d=new Date(ts); if(isNaN(d)) return ''; return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('en-GB',{hour:'numeric',minute:'2-digit'}); }
 function dot(c){ $('dot').className='live'+(c?' '+c:''); }
 
 async function gh(method, body){
@@ -245,14 +245,14 @@ function render(){
   const bal=Math.round((tin-tout)*100)/100;
   $('bal').textContent=fmt(bal); $('bal').classList.toggle('neg',bal<0);
   $('tin').textContent=fmt(tin); $('tout').textContent=fmt(tout);
-  $('cnt').textContent=tx.length? tx.length+' حركة':'';
+  $('cnt').textContent=tx.length? tx.length+' transactions':'';
   const list=$('list'); list.innerHTML='';
-  if(!tx.length){ list.innerHTML='<div class="msg">لسه مفيش حركات</div>'; return; }
+  if(!tx.length){ list.innerHTML='<div class="msg">No transactions yet</div>'; return; }
   [...tx].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,300).forEach(r=>{
     const el=document.createElement('div'); el.className='row';
     const a=document.createElement('div'); a.className='a '+(r.type==='-'?'m':'p'); a.textContent=(r.type==='-'?'−':'+')+fmt(r.amount);
     const i=document.createElement('div'); i.className='i';
-    const t=document.createElement('div'); t.className='t'; t.textContent=r.note||(r.type==='-'?'خرج':'دخل');
+    const t=document.createElement('div'); t.className='t'; t.textContent=r.note||(r.type==='-'?'Out':'In');
     const w=document.createElement('div'); w.className='w'; w.textContent=(r.by||'—')+' · '+when(r.at);
     i.append(t,w);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
@@ -266,50 +266,50 @@ async function refresh(silent){
   try{
     const st = await load();
     if(st==='missing'){
-      // أول مرة: نعمل الملف برصيد البداية
-      state={tx:[{id:'opening',amount:OPENING,type:'+',note:'رصيد البداية',by:'رصيد افتتاحي',at:Date.now()}],deposits:[]};
+      // first run: create the file with the opening balance
+      state={tx:[{id:'opening',amount:OPENING,type:'+',note:'Opening balance',by:'Opening balance',at:Date.now()}],deposits:[]};
       seedDeposits(state);
-      const ok = await save('رصيد البداية '+OPENING+' + العرابين');
+      const ok = await save('Opening balance '+OPENING+' + deposits');
       if(ok!=='ok'){ await load(); }
     } else if(!state.depInit){
-      await mutate(seedDeposits, 'إضافة العرابين من الكشكول');
+      await mutate(seedDeposits, 'Add deposits from notebook');
     }
     dot('ok'); render();
   }catch(e){
     dot('bad');
-    if(e.message==='auth'){ showSetup('الـ token مش شغال أو ملوش صلاحية على '+DATA_REPO); }
-    else if(!silent){ toast('مفيش اتصال — جرّب تاني'); }
-    if(!state.tx.length) $('list').innerHTML='<div class="msg">مش قادر أحمّل البيانات. اتأكد من النت أو من الإعدادات ⚙︎</div>';
+    if(e.message==='auth'){ showSetup('Token not working or has no access to '+DATA_REPO); }
+    else if(!silent){ toast('No connection — try again'); }
+    if(!state.tx.length) $('list').innerHTML='<div class="msg">Could not load data. Check your internet or settings ⚙︎</div>';
   }
 }
 
 async function add(type){
   if(busy) return;
   const amount=parseAmt($('amt').value);
-  if(!amount){ toast('اكتب المبلغ الأول'); $('amt').focus(); return; }
+  if(!amount){ toast('Enter an amount first'); $('amt').focus(); return; }
   busy=true; $('bp').disabled=$('bm').disabled=true; dot();
   const rec={ id:(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2)), amount, type, note:$('note').value.trim().slice(0,80), by:myName||'', at:Date.now() };
   try{
     const ok = await mutate(s=>{ s.tx.push(rec); }, (type==='-'?'- ':'+ ')+amount+(rec.note?' '+rec.note:'')+' ('+(myName||'')+')');
     if(ok){ $('amt').value=''; $('note').value=''; toast((type==='-'?'−':'+')+fmt(amount)+' ✓'); dot('ok'); }
-    else toast('الحفظ فشل — جرّب تاني');
-  }catch(e){ dot('bad'); toast(e.message==='auth'?'مشكلة في الـ token':'الحفظ فشل — اتأكد من النت'); }
+    else toast('Save failed — try again');
+  }catch(e){ dot('bad'); toast(e.message==='auth'?'Token problem':'Save failed — check your internet'); }
   busy=false; $('bp').disabled=$('bm').disabled=false; render();
 }
 
 let pending=null;
 function confirmDel(text, fn, msg){ pending={fn,msg}; $('dlgTxt').textContent=text; $('dlg').classList.add('on'); }
-function askDelete(r){ confirmDel('تمسح الحركة دي؟ ('+(r.type==='-'?'−':'+')+fmt(r.amount)+(r.note?' · '+r.note:'')+')', s=>{ s.tx=s.tx.filter(t=>t.id!==r.id); }, 'مسح '+(r.type)+r.amount+' ('+(myName||'')+')'); }
+function askDelete(r){ confirmDel('Delete this transaction? ('+(r.type==='-'?'−':'+')+fmt(r.amount)+(r.note?' · '+r.note:'')+')', s=>{ s.tx=s.tx.filter(t=>t.id!==r.id); }, 'Delete '+(r.type)+r.amount+' ('+(myName||'')+')'); }
 $('dlgNo').onclick=()=>{ pending=null; $('dlg').classList.remove('on'); };
 $('dlgYes').onclick=async()=>{
   const p=pending; pending=null; $('dlg').classList.remove('on'); if(!p||busy) return;
   busy=true;
-  try{ const ok=await mutate(p.fn, p.msg); toast(ok?'اتمسحت':'المسح فشل'); }
-  catch(e){ toast('المسح فشل'); }
+  try{ const ok=await mutate(p.fn, p.msg); toast(ok?'Deleted':'Delete failed'); }
+  catch(e){ toast('Delete failed'); }
   busy=false; render();
 };
 
-// ====== العرابين ======
+// ====== Deposits ======
 let dFilter='all';
 const normOrd = s => String(s||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[^\dA-Za-z-]/g,'');
 function renderDep(){
@@ -319,10 +319,10 @@ function renderDep(){
   const q=normOrd($('dq').value);
   let shown=deps.filter(d=> (!q || String(d.order).includes(q)) && (dFilter==='all' || (dFilter==='done')===!!d.done));
   shown.sort((a,b)=> (a.done-b.done) || (Number(a.order)-Number(b.order)));
-  $('dShown').textContent = q||dFilter!=='all' ? shown.length+' من '+deps.length : '';
+  $('dShown').textContent = q||dFilter!=='all' ? shown.length+' of '+deps.length : '';
   const list=$('dList'); list.innerHTML='';
   if(!shown.length){
-    list.innerHTML = q ? '<div class="msg">مفيش عربون للأوردر #'+q+'<br>لو دافع، اكتب المبلغ فوق ودوس + ضيف</div>' : '<div class="msg">مفيش أوردرات هنا</div>';
+    list.innerHTML = q ? '<div class="msg">No deposit for order #'+q+'<br>If they paid, enter the amount above and tap + Add</div>' : '<div class="msg">No orders here</div>';
     if(q && (!$('dOrd').value || $('dOrd').value===renderDep.auto)){ $('dOrd').value=q; renderDep.auto=q; }
     return;
   }
@@ -332,37 +332,37 @@ function renderDep(){
     const i=document.createElement('div'); i.className='i';
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
-    w.textContent = d.done ? 'اتشحن'+(d.doneBy&&d.doneBy!=='الكشكول'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'لسه مااتشحنش';
+    w.textContent = d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet';
     i.append(o,w);
     const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
-    x.onclick=()=>confirmDel('تمسح عربون أوردر #'+d.order+' ('+fmt(d.amount)+')؟', s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); }, 'مسح عربون #'+d.order+' ('+(myName||'')+')');
+    x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?', s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
     el.append(c,i,a,x); list.appendChild(el);
   });
 }
 async function toggleDep(d){
   if(busy) return;
   const nv=!d.done;
-  d.done=nv; renderDep();  // يبان على طول
+  d.done=nv; renderDep();  // show instantly
   busy=true;
   try{
-    const ok=await mutate(s=>{ const t=s.deposits.find(x=>x.id===d.id); if(t){ t.done=nv; t.doneBy=nv?(myName||''):''; t.doneAt=nv?Date.now():0; } }, (nv?'✓ اتشحن #':'↺ رجوع #')+d.order+' ('+(myName||'')+')');
-    toast(ok ? (nv?'#'+d.order+' اتشحن ✓':'#'+d.order+' رجع لسه') : 'الحفظ فشل — جرّب تاني');
-  }catch(e){ toast('الحفظ فشل — اتأكد من النت'); }
+    const ok=await mutate(s=>{ const t=s.deposits.find(x=>x.id===d.id); if(t){ t.done=nv; t.doneBy=nv?(myName||''):''; t.doneAt=nv?Date.now():0; } }, (nv?'✓ shipped #':'↺ unshipped #')+d.order+' ('+(myName||'')+')');
+    toast(ok ? (nv?'#'+d.order+' Shipped ✓':'#'+d.order+' back to not shipped') : 'Save failed — try again');
+  }catch(e){ toast('Save failed — check your internet'); }
   busy=false; render();
 }
 async function addDep(){
   if(busy) return;
   const order=normOrd($('dOrd').value), amount=parseAmt($('dAmt').value);
-  if(!order){ toast('اكتب رقم الأوردر'); $('dOrd').focus(); return; }
-  if(!amount){ toast('اكتب العربون'); $('dAmt').focus(); return; }
-  if((state.deposits||[]).some(d=>String(d.order)===order)){ toast('أوردر #'+order+' موجود بالفعل'); $('dq').value=order; renderDep(); return; }
+  if(!order){ toast('Enter the order number'); $('dOrd').focus(); return; }
+  if(!amount){ toast('Enter the deposit'); $('dAmt').focus(); return; }
+  if((state.deposits||[]).some(d=>String(d.order)===order)){ toast('Order #'+order+' already exists'); $('dq').value=order; renderDep(); return; }
   busy=true; $('dAdd').disabled=true;
   const rec={id:'d-'+order+'-'+Date.now().toString(36),order,amount,done:false,doneBy:'',doneAt:0,by:myName||'',at:Date.now()};
   try{
-    const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)) s.deposits.push(rec); }, 'عربون #'+order+' '+amount+' ('+(myName||'')+')');
-    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('اتضاف #'+order+' ✓'); } else toast('الحفظ فشل — جرّب تاني');
-  }catch(e){ toast('الحفظ فشل — اتأكد من النت'); }
+    const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)) s.deposits.push(rec); }, 'Deposit #'+order+' '+amount+' ('+(myName||'')+')');
+    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓'); } else toast('Save failed — try again');
+  }catch(e){ toast('Save failed — check your internet'); }
   busy=false; $('dAdd').disabled=false; render();
 }
 $('dAdd').onclick=addDep;
@@ -381,11 +381,11 @@ if(ls.get('khazna_tab')==='dep'){ $('vCash').classList.add('hide'); $('vDep').cl
 function showSetup(err){ $('nm').value=myName||''; $('tok').value=token||''; $('setupErr').textContent=err||''; $('setup').classList.add('on'); }
 $('save').onclick=async()=>{
   const n=$('nm').value.trim(), t=$('tok').value.trim();
-  if(!n||!t){ $('setupErr').textContent='اكتب اسمك والـ token'; return; }
+  if(!n||!t){ $('setupErr').textContent='Enter your name and the token'; return; }
   token=t; myName=n; ls.set('khazna_token',t); ls.set('khazna_name',n);
-  $('setupErr').textContent='بجرّب…';
+  $('setupErr').textContent='Checking…';
   try{ await load(); $('setup').classList.remove('on'); refresh(); }
-  catch(e){ $('setupErr').textContent = e.message==='auth' ? 'الـ token غلط أو ملوش صلاحية Contents على ريبو '+DATA_REPO : 'مفيش اتصال، جرّب تاني'; }
+  catch(e){ $('setupErr').textContent = e.message==='auth' ? 'Token is wrong or has no Contents access to repo '+DATA_REPO : 'No connection, try again'; }
 };
 $('gear').onclick=()=>showSetup();
 $('ref').onclick=()=>refresh();
