@@ -65,10 +65,57 @@
   #tok{direction:ltr;font-size:14px}
   .live{width:8px;height:8px;border-radius:50%;background:var(--mut);display:inline-block;margin-inline-end:6px;vertical-align:middle}
   .live.ok{background:var(--plus)} .live.bad{background:var(--minus)}
+  .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card);padding:5px;border-radius:14px;margin-bottom:14px}
+  .tabs button{background:none;color:var(--mut);padding:10px;font-weight:700;font-size:16px;border-radius:10px}
+  .tabs button.on{background:var(--acc);color:#04202d}
+  .hide{display:none!important}
+  .dsum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .dsum div{background:#0b1220;border-radius:12px;padding:8px;text-align:center;font-size:12px;color:var(--mut)}
+  .dsum b{display:block;font-size:18px;color:var(--txt);direction:ltr}
+  .dsum .w b{color:#fbbf24}
+  #dq{font-size:22px;font-weight:700;text-align:center;direction:ltr}
+  .addrow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:10px}
+  .addrow input{font-size:16px;padding:12px;direction:ltr;text-align:center}
+  .addrow button{background:var(--plus);color:#fff;font-weight:800;padding:0 16px;font-size:15px}
+  .seg{display:flex;gap:6px;margin-top:10px}
+  .seg button{flex:1;background:#0b1220;color:var(--mut);border:1px solid var(--line);padding:8px;font-size:14px;font-weight:600}
+  .seg button.on{border-color:var(--acc);color:var(--acc)}
+  .drow{background:var(--card);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:12px;border:2px solid transparent}
+  .drow.done{opacity:.55}
+  .drow.hit{border-color:var(--acc)}
+  .chk{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:#0b1220;color:transparent;font-size:24px;font-weight:900;flex:none}
+  .drow.done .chk{background:var(--plus);border-color:var(--plus);color:#fff}
+  .drow .o{font-size:20px;font-weight:800;direction:ltr}
+  .drow .i{flex:1;min-width:0}
+  .drow .w{font-size:12px;color:var(--mut)}
+  .drow .a{font-weight:800;font-size:18px;direction:ltr;color:#fbbf24}
+  .drow .x{background:none;color:var(--mut);font-size:16px;padding:4px 6px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="tabs"><button id="tCash" class="on">💰 الخزنة</button><button id="tDep">📦 العرابين</button></div>
+
+  <div id="vDep" class="hide">
+    <div class="card" style="margin-top:0">
+      <input id="dq" type="text" inputmode="numeric" placeholder="🔍 رقم الأوردر" autocomplete="off">
+      <div class="seg"><button data-f="all" class="on">الكل</button><button data-f="open">لسه</button><button data-f="done">اتشحن ✓</button></div>
+      <div class="dsum">
+        <div>إجمالي العرابين<b id="dTot">0</b></div>
+        <div class="w">لسه مااتشحنش<b id="dOpen">0</b></div>
+        <div>عدد الأوردرات<b id="dCnt">0</b></div>
+      </div>
+      <div class="addrow">
+        <input id="dOrd" type="text" inputmode="numeric" placeholder="رقم الأوردر">
+        <input id="dAmt" type="text" inputmode="decimal" placeholder="العربون">
+        <button id="dAdd">+ ضيف</button>
+      </div>
+    </div>
+    <h3><span>الأوردرات اللي دافعة عربون</span><span id="dShown"></span></h3>
+    <div class="list" id="dList"><div class="msg">جاري التحميل…</div></div>
+  </div>
+
+  <div id="vCash">
   <div class="bal">
     <button class="gear" id="gear" title="الإعدادات">⚙︎</button>
     <button class="ref" id="ref" title="تحديث">↻</button>
@@ -92,6 +139,7 @@
 
   <h3><span>آخر الحركات</span><span id="cnt"></span></h3>
   <div class="list" id="list"><div class="msg">جاري التحميل…</div></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -118,7 +166,16 @@ const OWNER = 'bavelly';
 const DATA_REPO = 'khazna-data';
 const FILE = 'data.json';
 const OPENING = 252000;   // رصيد البداية لو الملف لسه مش موجود
+// العرابين اللي في الكشكول (رقم الأوردر، العربون، اتشحن؟)
+const DEP_SEED = [[1309,700,1],[1314,300,1],[1313,300,1],[1319,300,1],[1320,300,1],[1323,300,1],[1321,300,1],[1324,300,1],[1329,300,1],[1340,500,0],[1341,300,1],[1343,300,1],[1344,300,1],[1342,300,1],[1346,300,1],[1350,300,0],[1353,300,1],[1355,300,1]];
 // =======================
+function seedDeposits(s){
+  if(s.depInit) return;
+  const have=new Set((s.deposits||[]).map(d=>String(d.order)));
+  const now=Date.now();
+  DEP_SEED.forEach(([o,a,d],i)=>{ if(have.has(String(o))) return; s.deposits.push({id:'d-'+o,order:String(o),amount:a,done:!!d,doneBy:d?'الكشكول':'',doneAt:d?now:0,by:'الكشكول',at:now+i}); });
+  s.depInit=true;
+}
 
 const API = `https://api.github.com/repos/${OWNER}/${DATA_REPO}/contents/${FILE}`;
 const $ = id => document.getElementById(id);
@@ -148,11 +205,14 @@ async function gh(method, body){
 
 async function load(){
   const r = await gh('GET');
-  if(r.status===404){ sha=null; state={tx:[]}; return 'missing'; }
+  if(r.status===404){ sha=null; state={tx:[],deposits:[]}; return 'missing'; }
   if(r.status===401||r.status===403) throw new Error('auth');
   if(!r.ok) throw new Error('http '+r.status);
   const j = await r.json(); sha=j.sha;
-  try{ state = JSON.parse(b64dec(j.content)); if(!Array.isArray(state.tx)) state={tx:[]}; }catch(e){ state={tx:[]}; }
+  try{ state = JSON.parse(b64dec(j.content)); }catch(e){ state={}; }
+  if(!state||typeof state!=='object') state={};
+  if(!Array.isArray(state.tx)) state.tx=[];
+  if(!Array.isArray(state.deposits)) state.deposits=[];
   return 'ok';
 }
 
@@ -179,6 +239,7 @@ async function mutate(fn, msg){
 }
 
 function render(){
+  renderDep();
   let tin=0,tout=0; const tx=state.tx||[];
   tx.forEach(r=>{ const a=Number(r.amount)||0; if(r.type==='-') tout+=a; else tin+=a; });
   const bal=Math.round((tin-tout)*100)/100;
@@ -206,9 +267,12 @@ async function refresh(silent){
     const st = await load();
     if(st==='missing'){
       // أول مرة: نعمل الملف برصيد البداية
-      state={tx:[{id:'opening',amount:OPENING,type:'+',note:'رصيد البداية',by:'رصيد افتتاحي',at:Date.now()}]};
-      const ok = await save('رصيد البداية '+OPENING);
+      state={tx:[{id:'opening',amount:OPENING,type:'+',note:'رصيد البداية',by:'رصيد افتتاحي',at:Date.now()}],deposits:[]};
+      seedDeposits(state);
+      const ok = await save('رصيد البداية '+OPENING+' + العرابين');
       if(ok!=='ok'){ await load(); }
+    } else if(!state.depInit){
+      await mutate(seedDeposits, 'إضافة العرابين من الكشكول');
     }
     dot('ok'); render();
   }catch(e){
@@ -234,15 +298,85 @@ async function add(type){
 }
 
 let pending=null;
-function askDelete(r){ pending=r; $('dlgTxt').textContent='تمسح الحركة دي؟ ('+(r.type==='-'?'−':'+')+fmt(r.amount)+(r.note?' · '+r.note:'')+')'; $('dlg').classList.add('on'); }
+function confirmDel(text, fn, msg){ pending={fn,msg}; $('dlgTxt').textContent=text; $('dlg').classList.add('on'); }
+function askDelete(r){ confirmDel('تمسح الحركة دي؟ ('+(r.type==='-'?'−':'+')+fmt(r.amount)+(r.note?' · '+r.note:'')+')', s=>{ s.tx=s.tx.filter(t=>t.id!==r.id); }, 'مسح '+(r.type)+r.amount+' ('+(myName||'')+')'); }
 $('dlgNo').onclick=()=>{ pending=null; $('dlg').classList.remove('on'); };
 $('dlgYes').onclick=async()=>{
-  const r=pending; pending=null; $('dlg').classList.remove('on'); if(!r||busy) return;
+  const p=pending; pending=null; $('dlg').classList.remove('on'); if(!p||busy) return;
   busy=true;
-  try{ const ok=await mutate(s=>{ s.tx=s.tx.filter(t=>t.id!==r.id); }, 'مسح '+(r.type)+r.amount+' ('+(myName||'')+')'); toast(ok?'اتمسحت':'المسح فشل'); }
+  try{ const ok=await mutate(p.fn, p.msg); toast(ok?'اتمسحت':'المسح فشل'); }
   catch(e){ toast('المسح فشل'); }
   busy=false; render();
 };
+
+// ====== العرابين ======
+let dFilter='all';
+const normOrd = s => String(s||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[^\dA-Za-z-]/g,'');
+function renderDep(){
+  const deps=state.deposits||[];
+  let tot=0,open=0; deps.forEach(d=>{ const a=Number(d.amount)||0; tot+=a; if(!d.done) open+=a; });
+  $('dTot').textContent=fmt(tot); $('dOpen').textContent=fmt(open); $('dCnt').textContent=deps.length;
+  const q=normOrd($('dq').value);
+  let shown=deps.filter(d=> (!q || String(d.order).includes(q)) && (dFilter==='all' || (dFilter==='done')===!!d.done));
+  shown.sort((a,b)=> (a.done-b.done) || (Number(a.order)-Number(b.order)));
+  $('dShown').textContent = q||dFilter!=='all' ? shown.length+' من '+deps.length : '';
+  const list=$('dList'); list.innerHTML='';
+  if(!shown.length){
+    list.innerHTML = q ? '<div class="msg">مفيش عربون للأوردر #'+q+'<br>لو دافع، اكتب المبلغ فوق ودوس + ضيف</div>' : '<div class="msg">مفيش أوردرات هنا</div>';
+    if(q && (!$('dOrd').value || $('dOrd').value===renderDep.auto)){ $('dOrd').value=q; renderDep.auto=q; }
+    return;
+  }
+  shown.forEach(d=>{
+    const el=document.createElement('div'); el.className='drow'+(d.done?' done':'')+(q&&String(d.order)===q?' hit':'');
+    const c=document.createElement('button'); c.className='chk'; c.textContent='✓'; c.onclick=()=>toggleDep(d);
+    const i=document.createElement('div'); i.className='i';
+    const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
+    const w=document.createElement('div'); w.className='w';
+    w.textContent = d.done ? 'اتشحن'+(d.doneBy&&d.doneBy!=='الكشكول'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'لسه مااتشحنش';
+    i.append(o,w);
+    const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
+    const x=document.createElement('button'); x.className='x'; x.textContent='✕';
+    x.onclick=()=>confirmDel('تمسح عربون أوردر #'+d.order+' ('+fmt(d.amount)+')؟', s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); }, 'مسح عربون #'+d.order+' ('+(myName||'')+')');
+    el.append(c,i,a,x); list.appendChild(el);
+  });
+}
+async function toggleDep(d){
+  if(busy) return;
+  const nv=!d.done;
+  d.done=nv; renderDep();  // يبان على طول
+  busy=true;
+  try{
+    const ok=await mutate(s=>{ const t=s.deposits.find(x=>x.id===d.id); if(t){ t.done=nv; t.doneBy=nv?(myName||''):''; t.doneAt=nv?Date.now():0; } }, (nv?'✓ اتشحن #':'↺ رجوع #')+d.order+' ('+(myName||'')+')');
+    toast(ok ? (nv?'#'+d.order+' اتشحن ✓':'#'+d.order+' رجع لسه') : 'الحفظ فشل — جرّب تاني');
+  }catch(e){ toast('الحفظ فشل — اتأكد من النت'); }
+  busy=false; render();
+}
+async function addDep(){
+  if(busy) return;
+  const order=normOrd($('dOrd').value), amount=parseAmt($('dAmt').value);
+  if(!order){ toast('اكتب رقم الأوردر'); $('dOrd').focus(); return; }
+  if(!amount){ toast('اكتب العربون'); $('dAmt').focus(); return; }
+  if((state.deposits||[]).some(d=>String(d.order)===order)){ toast('أوردر #'+order+' موجود بالفعل'); $('dq').value=order; renderDep(); return; }
+  busy=true; $('dAdd').disabled=true;
+  const rec={id:'d-'+order+'-'+Date.now().toString(36),order,amount,done:false,doneBy:'',doneAt:0,by:myName||'',at:Date.now()};
+  try{
+    const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)) s.deposits.push(rec); }, 'عربون #'+order+' '+amount+' ('+(myName||'')+')');
+    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('اتضاف #'+order+' ✓'); } else toast('الحفظ فشل — جرّب تاني');
+  }catch(e){ toast('الحفظ فشل — اتأكد من النت'); }
+  busy=false; $('dAdd').disabled=false; render();
+}
+$('dAdd').onclick=addDep;
+$('dAmt').addEventListener('keydown',e=>{ if(e.key==='Enter') addDep(); });
+$('dq').addEventListener('input',renderDep);
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ dFilter=b.dataset.f; document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b)); renderDep(); });
+function showTab(t){
+  $('vCash').classList.toggle('hide',t!=='cash'); $('vDep').classList.toggle('hide',t!=='dep');
+  $('tCash').classList.toggle('on',t==='cash'); $('tDep').classList.toggle('on',t==='dep');
+  ls.set('khazna_tab',t); refresh(true);
+}
+$('tCash').onclick=()=>showTab('cash');
+$('tDep').onclick=()=>showTab('dep');
+if(ls.get('khazna_tab')==='dep'){ $('vCash').classList.add('hide'); $('vDep').classList.remove('hide'); $('tCash').classList.remove('on'); $('tDep').classList.add('on'); }
 
 function showSetup(err){ $('nm').value=myName||''; $('tok').value=token||''; $('setupErr').textContent=err||''; $('setup').classList.add('on'); }
 $('save').onclick=async()=>{
