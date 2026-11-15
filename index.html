@@ -336,7 +336,7 @@ function renderDep(){
     i.append(o,w);
     const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
-    x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?', s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
+    x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?'+((state.tx||[]).some(t=>t.depId===d.id)?' It will also be removed from Cash.':''), s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); s.tx=s.tx.filter(t=>t.depId!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
     el.append(c,i,a,x); list.appendChild(el);
   });
 }
@@ -360,8 +360,8 @@ async function addDep(){
   busy=true; $('dAdd').disabled=true;
   const rec={id:'d-'+order+'-'+Date.now().toString(36),order,amount,done:false,doneBy:'',doneAt:0,by:myName||'',at:Date.now()};
   try{
-    const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)) s.deposits.push(rec); }, 'Deposit #'+order+' '+amount+' ('+(myName||'')+')');
-    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓'); } else toast('Save failed — try again');
+    const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)){ s.deposits.push(rec); s.tx.push({id:'tx-'+rec.id,amount,type:'+',note:'Deposit #'+order,by:myName||'',at:rec.at,depId:rec.id}); } }, 'Deposit #'+order+' '+amount+' ('+(myName||'')+')');
+    if(ok){ $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓ · +'+fmt(amount)+' to Cash'); } else toast('Save failed — try again');
   }catch(e){ toast('Save failed — check your internet'); }
   busy=false; $('dAdd').disabled=false; render();
 }
