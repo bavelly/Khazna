@@ -97,6 +97,8 @@
   .det .it b{font-size:15px}
   .det .nm{color:#fbbf24;font-weight:600}
   .det a.ph{color:var(--acc);text-decoration:none;font-weight:700}
+  .det .col{background:#0e7490;color:#fff;border-radius:10px;padding:10px 12px;margin:6px 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  .det .col b{font-size:22px;direction:ltr}
   .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-inline-start:4px}
   .tag.ok{background:#14532d;color:#86efac} .tag.no{background:#422006;color:#fcd34d} .tag.x{background:#450a0a;color:#fca5a5}
   .shop{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#04202d;background:#95bf47;border-radius:8px;padding:3px 8px;text-decoration:none}
@@ -238,7 +240,9 @@ function detailsHTML(num){
     <div class="dm">${esc(o.date)}${o.phone?` · <a class="ph" href="tel:${tel}">${esc(o.phone)}</a>`:''}</div>
     <div class="dm">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
     ${items}
-    <div class="it"><b>Total ${fmt(o.total)}</b> · Due on delivery <b>${fmt(o.due)}</b></div>
+    ${(()=>{ const dep=(state.deposits||[]).find(d=>String(d.order)===String(num)); const dv=dep?Number(dep.amount)||0:0; const col=Math.max(0,Math.round(((Number(o.due)||0)-dv)*100)/100);
+      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b>`:''}</div>
+      <div class="col">🚚 Collect by courier <b>${fmt(col)}</b></div>`; })()}
     ${o.note?`<div class="dm">📝 ${esc(o.note)}</div>`:''}
     ${link}
   </div>`;
@@ -372,7 +376,9 @@ function renderDep(){
     const i=document.createElement('div'); i.className='i';
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
-    w.textContent = d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet';
+    const od = orders && orders.orders && orders.orders[String(d.order)];
+    const colTxt = od ? ' · Collect '+fmt(Math.max(0,(Number(od.due)||0)-(Number(d.amount)||0))) : '';
+    w.textContent = (d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet') + colTxt;
     const sl=document.createElement('button'); sl.className='shop'; sl.style.border='0'; sl.textContent=openDet.has(d.id)?'▲ Hide details':'🛍 Order details';
     sl.onclick=()=>{ openDet.has(d.id)?openDet.delete(d.id):openDet.add(d.id); loadOrders(); renderDep(); };
     i.append(o,w,sl);
