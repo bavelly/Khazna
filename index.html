@@ -90,6 +90,7 @@
   .drow .w{font-size:12px;color:var(--mut)}
   .drow .a{font-weight:800;font-size:18px;direction:ltr;color:#fbbf24}
   .drow .x{background:none;color:var(--mut);font-size:16px;padding:4px 6px}
+  .shop{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:#04202d;background:#95bf47;border-radius:8px;padding:3px 8px;text-decoration:none}
 </style>
 </head>
 <body>
@@ -165,6 +166,7 @@
 const OWNER = 'bavelly';
 const DATA_REPO = 'khazna-data';
 const FILE = 'data.json';
+const SHOP_ADMIN = 'https://admin.shopify.com/store/qb1edf-5a/orders';
 const OPENING = 252000;   // opening balance if the data file does not exist yet
 // Deposits from the notebook (order #, deposit, shipped?)
 const DEP_SEED = [[1309,700,1],[1314,300,1],[1313,300,1],[1319,300,1],[1320,300,1],[1323,300,1],[1321,300,1],[1324,300,1],[1329,300,1],[1340,500,0],[1341,300,1],[1343,300,1],[1344,300,1],[1342,300,1],[1346,300,1],[1350,300,0],[1353,300,1],[1355,300,1]];
@@ -333,7 +335,8 @@ function renderDep(){
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
     w.textContent = d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet';
-    i.append(o,w);
+    const sl=document.createElement('a'); sl.className='shop'; sl.textContent='🛍 Order details'; sl.target='_blank'; sl.rel='noopener'; sl.href=SHOP_ADMIN+'?query='+encodeURIComponent(d.order);
+    i.append(o,w,sl);
     const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
     x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?'+((state.tx||[]).some(t=>t.depId===d.id)?' It will also be removed from Cash.':''), s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); s.tx=s.tx.filter(t=>t.depId!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
