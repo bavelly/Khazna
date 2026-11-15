@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="الخزنة">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>الخزنة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mut:#94a3b8;--plus:#22c55e;--minus:#ef4444;--acc:#38bdf8}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Cairo,system-ui,sans-serif}
+  body{padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+  .wrap{max-width:480px;margin:0 auto}
+  .bal{background:linear-gradient(135deg,#1e3a8a,#0e7490);border-radius:22px;padding:22px 20px;text-align:center;box-shadow:0 10px 30px #0006;position:relative}
+  .bal small{color:#cbd5e1;font-size:15px}
+  .bal .n{font-size:46px;font-weight:800;line-height:1.2;margin-top:4px;direction:ltr}
+  .bal .n.neg{color:#fecaca}
+  .sub{display:flex;justify-content:space-around;margin-top:12px;font-size:13px;color:#e2e8f0}
+  .sub b{display:block;font-size:16px;direction:ltr}
+  .gear{position:absolute;top:10px;left:12px;background:none;color:#cbd5e1;font-size:20px;padding:4px}
+  .ref{position:absolute;top:10px;right:12px;background:none;color:#cbd5e1;font-size:20px;padding:4px}
+  .card{background:var(--card);border-radius:18px;padding:14px;margin-top:14px}
+  input{width:100%;background:#0b1220;border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:14px;font:inherit;font-size:18px;outline:none}
+  input:focus{border-color:var(--acc)}
+  #amt{font-size:28px;font-weight:700;text-align:center;direction:ltr}
+  #note{margin-top:10px;font-size:16px}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  button{font:inherit;border:0;border-radius:14px;cursor:pointer}
+  .big{font-size:30px;font-weight:800;padding:12px;color:#fff}
+  .big span{display:block;font-size:14px;font-weight:600;opacity:.9}
+  .p{background:var(--plus)} .m{background:var(--minus)}
+  .big:active{transform:scale(.97)} .big:disabled{opacity:.5}
+  .quick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+  .quick button{background:#0b1220;color:var(--mut);border:1px solid var(--line);padding:6px 12px;font-size:14px;direction:ltr}
+  h3{margin:20px 4px 8px;font-size:16px;color:var(--mut);display:flex;justify-content:space-between}
+  .list{display:flex;flex-direction:column;gap:8px}
+  .row{background:var(--card);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+  .row .a{font-weight:800;font-size:18px;direction:ltr;min-width:90px;text-align:left}
+  .row .a.p{color:var(--plus);background:none} .row .a.m{color:var(--minus);background:none}
+  .row .i{flex:1;min-width:0}
+  .row .t{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .w{font-size:12px;color:var(--mut)}
+  .row .x{background:none;color:var(--mut);font-size:18px;padding:4px 8px}
+  .msg{text-align:center;color:var(--mut);padding:18px;font-size:14px}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:#020617;border:1px solid var(--line);padding:10px 18px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+  .toast.on{opacity:1}
+  .dlg{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:8}
+  .dlg.on{display:flex}
+  .box{background:var(--card);border-radius:18px;padding:18px;max-width:380px;width:100%}
+  .box h2{margin:0 0 6px;font-size:20px}
+  .box p{color:var(--mut);font-size:14px;margin:6px 0 12px}
+  .box label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  .box .r{display:flex;gap:8px;margin-top:14px}
+  .box .r button{flex:1;padding:12px;font-weight:700;color:#fff;background:var(--line)}
+  .box .r button.go{background:var(--acc);color:#04202d}
+  .box .r button.del{background:var(--minus)}
+  #tok{direction:ltr;font-size:14px}
+  .live{width:8px;height:8px;border-radius:50%;background:var(--mut);display:inline-block;margin-inline-end:6px;vertical-align:middle}
+  .live.ok{background:var(--plus)} .live.bad{background:var(--minus)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bal">
+    <button class="gear" id="gear" title="الإعدادات">⚙︎</button>
+    <button class="ref" id="ref" title="تحديث">↻</button>
+    <small><span class="live" id="dot"></span>رصيد الخزنة</small>
+    <div class="n" id="bal">—</div>
+    <div class="sub">
+      <div>إجمالي الداخل<b id="tin">0</b></div>
+      <div>إجمالي الخارج<b id="tout">0</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <input id="amt" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+    <div class="quick" id="quick"></div>
+    <input id="note" type="text" placeholder="ملاحظة (اختياري) — مثلاً: بيع، خامات، شحن" autocomplete="off" maxlength="80">
+    <div class="btns">
+      <button class="big p" id="bp">+<span>دخل الخزنة</span></button>
+      <button class="big m" id="bm">−<span>خرج من الخزنة</span></button>
+    </div>
+  </div>
+
+  <h3><span>آخر الحركات</span><span id="cnt"></span></h3>
+  <div class="list" id="list"><div class="msg">جاري التحميل…</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="dlg" id="setup"><div class="box">
+  <h2>إعداد أول مرة</h2>
+  <p>اكتب اسمك والـ token اللي عملته على GitHub. ده بيتعمل مرة واحدة بس على كل موبايل.</p>
+  <label>اسمك</label>
+  <input id="nm" type="text" placeholder="مثلاً: أحمد" maxlength="20">
+  <label>GitHub token</label>
+  <input id="tok" type="password" placeholder="github_pat_..." autocomplete="off">
+  <div class="r"><button class="go" id="save">حفظ ودخول</button></div>
+  <p id="setupErr" style="color:#fca5a5"></p>
+</div></div>
+
+<div class="dlg" id="dlg"><div class="box" style="text-align:center">
+  <p id="dlgTxt" style="color:var(--txt);font-size:16px">تمسح الحركة دي؟</p>
+  <div class="r"><button id="dlgNo">لا</button><button class="del" id="dlgYes">امسح</button></div>
+</div></div>
+
+<script>
+// ====== الإعدادات ======
+const OWNER = 'bavelly';
+const DATA_REPO = 'khazna-data';
+const FILE = 'data.json';
+const OPENING = 252000;   // رصيد البداية لو الملف لسه مش موجود
+// =======================
+
+const API = `https://api.github.com/repos/${OWNER}/${DATA_REPO}/contents/${FILE}`;
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+const ls = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+let token = ls.get('khazna_token'), myName = ls.get('khazna_name');
+let state = {tx:[]}, sha = null, busy = false;
+
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),2000); }
+function b64enc(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin); }
+function b64dec(b64){ const bin=atob(b64.replace(/\n/g,'')); const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0)); return new TextDecoder().decode(bytes); }
+function parseAmt(s){
+  s=String(s||'').trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫,]/g,'.').replace(/[^\d.]/g,'');
+  const n=parseFloat(s); return isFinite(n)&&n>0 ? Math.round(n*100)/100 : 0;
+}
+function when(ts){ const d=new Date(ts); if(isNaN(d)) return ''; return d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'numeric',minute:'2-digit'}); }
+function dot(c){ $('dot').className='live'+(c?' '+c:''); }
+
+async function gh(method, body){
+  const r = await fetch(API + (method==='GET' ? '?t='+Date.now() : ''), {
+    method, cache:'no-store',
+    headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json', 'X-GitHub-Api-Version':'2022-11-28' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return r;
+}
+
+async function load(){
+  const r = await gh('GET');
+  if(r.status===404){ sha=null; state={tx:[]}; return 'missing'; }
+  if(r.status===401||r.status===403) throw new Error('auth');
+  if(!r.ok) throw new Error('http '+r.status);
+  const j = await r.json(); sha=j.sha;
+  try{ state = JSON.parse(b64dec(j.content)); if(!Array.isArray(state.tx)) state={tx:[]}; }catch(e){ state={tx:[]}; }
+  return 'ok';
+}
+
+async function save(msg){
+  const body={ message: msg, content: b64enc(JSON.stringify(state,null,1)) };
+  if(sha) body.sha=sha;
+  const r = await gh('PUT', body);
+  if(r.status===409||r.status===422) return 'conflict';
+  if(r.status===401||r.status===403) throw new Error('auth');
+  if(!r.ok) throw new Error('http '+r.status);
+  const j=await r.json(); sha=j.content.sha; return 'ok';
+}
+
+// apply a change safely: reload latest, apply, save; retry on conflict
+async function mutate(fn, msg){
+  for(let i=0;i<4;i++){
+    await load();
+    fn(state);
+    const res = await save(msg);
+    if(res==='ok') return true;
+    await new Promise(r=>setTimeout(r,400+Math.random()*600));
+  }
+  return false;
+}
+
+function render(){
+  let tin=0,tout=0; const tx=state.tx||[];
+  tx.forEach(r=>{ const a=Number(r.amount)||0; if(r.type==='-') tout+=a; else tin+=a; });
+  const bal=Math.round((tin-tout)*100)/100;
+  $('bal').textContent=fmt(bal); $('bal').classList.toggle('neg',bal<0);
+  $('tin').textContent=fmt(tin); $('tout').textContent=fmt(tout);
+  $('cnt').textContent=tx.length? tx.length+' حركة':'';
+  const list=$('list'); list.innerHTML='';
+  if(!tx.length){ list.innerHTML='<div class="msg">لسه مفيش حركات</div>'; return; }
+  [...tx].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,300).forEach(r=>{
+    const el=document.createElement('div'); el.className='row';
+    const a=document.createElement('div'); a.className='a '+(r.type==='-'?'m':'p'); a.textContent=(r.type==='-'?'−':'+')+fmt(r.amount);
+    const i=document.createElement('div'); i.className='i';
+    const t=document.createElement('div'); t.className='t'; t.textContent=r.note||(r.type==='-'?'خرج':'دخل');
+    const w=document.createElement('div'); w.className='w'; w.textContent=(r.by||'—')+' · '+when(r.at);
+    i.append(t,w);
+    const x=document.createElement('button'); x.className='x'; x.textContent='✕';
+    x.onclick=()=>askDelete(r);
+    el.append(a,i,x); list.appendChild(el);
+  });
+}
+
+async function refresh(silent){
+  if(!token || busy) return;
+  try{
+    const st = await load();
+    if(st==='missing'){
+      // أول مرة: نعمل الملف برصيد البداية
+      state={tx:[{id:'opening',amount:OPENING,type:'+',note:'رصيد البداية',by:'رصيد افتتاحي',at:Date.now()}]};
+      const ok = await save('رصيد البداية '+OPENING);
+      if(ok!=='ok'){ await load(); }
+    }
+    dot('ok'); render();
+  }catch(e){
+    dot('bad');
+    if(e.message==='auth'){ showSetup('الـ token مش شغال أو ملوش صلاحية على '+DATA_REPO); }
+    else if(!silent){ toast('مفيش اتصال — جرّب تاني'); }
+    if(!state.tx.length) $('list').innerHTML='<div class="msg">مش قادر أحمّل البيانات. اتأكد من النت أو من الإعدادات ⚙︎</div>';
+  }
+}
+
+async function add(type){
+  if(busy) return;
+  const amount=parseAmt($('amt').value);
+  if(!amount){ toast('اكتب المبلغ الأول'); $('amt').focus(); return; }
+  busy=true; $('bp').disabled=$('bm').disabled=true; dot();
+  const rec={ id:(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2)), amount, type, note:$('note').value.trim().slice(0,80), by:myName||'', at:Date.now() };
+  try{
+    const ok = await mutate(s=>{ s.tx.push(rec); }, (type==='-'?'- ':'+ ')+amount+(rec.note?' '+rec.note:'')+' ('+(myName||'')+')');
+    if(ok){ $('amt').value=''; $('note').value=''; toast((type==='-'?'−':'+')+fmt(amount)+' ✓'); dot('ok'); }
+    else toast('الحفظ فشل — جرّب تاني');
+  }catch(e){ dot('bad'); toast(e.message==='auth'?'مشكلة في الـ token':'الحفظ فشل — اتأكد من النت'); }
+  busy=false; $('bp').disabled=$('bm').disabled=false; render();
+}
+
+let pending=null;
+function askDelete(r){ pending=r; $('dlgTxt').textContent='تمسح الحركة دي؟ ('+(r.type==='-'?'−':'+')+fmt(r.amount)+(r.note?' · '+r.note:'')+')'; $('dlg').classList.add('on'); }
+$('dlgNo').onclick=()=>{ pending=null; $('dlg').classList.remove('on'); };
+$('dlgYes').onclick=async()=>{
+  const r=pending; pending=null; $('dlg').classList.remove('on'); if(!r||busy) return;
+  busy=true;
+  try{ const ok=await mutate(s=>{ s.tx=s.tx.filter(t=>t.id!==r.id); }, 'مسح '+(r.type)+r.amount+' ('+(myName||'')+')'); toast(ok?'اتمسحت':'المسح فشل'); }
+  catch(e){ toast('المسح فشل'); }
+  busy=false; render();
+};
+
+function showSetup(err){ $('nm').value=myName||''; $('tok').value=token||''; $('setupErr').textContent=err||''; $('setup').classList.add('on'); }
+$('save').onclick=async()=>{
+  const n=$('nm').value.trim(), t=$('tok').value.trim();
+  if(!n||!t){ $('setupErr').textContent='اكتب اسمك والـ token'; return; }
+  token=t; myName=n; ls.set('khazna_token',t); ls.set('khazna_name',n);
+  $('setupErr').textContent='بجرّب…';
+  try{ await load(); $('setup').classList.remove('on'); refresh(); }
+  catch(e){ $('setupErr').textContent = e.message==='auth' ? 'الـ token غلط أو ملوش صلاحية Contents على ريبو '+DATA_REPO : 'مفيش اتصال، جرّب تاني'; }
+};
+$('gear').onclick=()=>showSetup();
+$('ref').onclick=()=>refresh();
+$('bp').onclick=()=>add('+');
+$('bm').onclick=()=>add('-');
+[50,100,200,500,1000].forEach(v=>{ const b=document.createElement('button'); b.textContent='+'+v; b.onclick=()=>{ $('amt').value=String((parseAmt($('amt').value)||0)+v); }; $('quick').appendChild(b); });
+
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) refresh(true); });
+setInterval(()=>{ if(!document.hidden) refresh(true); }, 20000);
+
+if(!token||!myName) showSetup(); else refresh();
+</script>
+</body>
+</html>
