@@ -85,6 +85,7 @@
 <script>
 const FEED = 'orders.enc.json';
 const LIVE = 'https://ntfy.sh/przm-orders-7b85cc4bdb4d-d';   // instant order details from Shopify
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
 const START = Date.parse('2026-11-16T00:00:00+02:00');
 let live = {};   // orders that arrived instantly, before the 5-min feed has them
 const $ = id => document.getElementById(id);
@@ -199,7 +200,9 @@ function render(){
       <div class="tot"><span>Order total</span><b>${fmt(o.total)}</b></div>
       ${o.note?`<div class="note">📝 ${esc(o.note)}</div>`:''}
       <div class="btns">
-        ${wa?`<a class="wa" target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp</a>`:''}
+        ${wa?(IS_ANDROID
+          ? `<a class="wa" href="intent://send?phone=${wa}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=${encodeURIComponent('https://wa.me/'+wa)};end">WA Business</a>`
+          : `<a class="wa" target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp</a>`):''}
         ${tel?`<a class="call" href="tel:${tel}">Call</a>`:''}
         <button class="cp" data-n="${esc(o.n)}">Copy order</button>
       </div>
