@@ -164,6 +164,7 @@ function allOrders(){
   const extra=Object.values(live).filter(o=>!have.has(o.n));
   return [...extra, ...feed.orders].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
 }
+const isPaid = o => /^(PAID|PARTIALLY_PAID)$/.test(String(o.payment||'').toUpperCase());
 function render(){
   if(!feed) return;
   $('upd').textContent = 'Updated ' + ago(feed.syncedAt);
@@ -175,8 +176,8 @@ function render(){
       if(!(hay.includes(q) || (qd.length>=4 && String(o.phone).replace(/\D/g,'').includes(qd)))) return false;
       return true;
     }
-    if(filter==='open') return !o.cancelled && o.payment!=='PAID' && o.fulfillment!=='FULFILLED';
-    if(filter==='paid') return o.payment==='PAID';
+    if(filter==='open') return !o.cancelled && !isPaid(o) && o.fulfillment!=='FULFILLED';
+    if(filter==='paid') return isPaid(o);
     return true;
   });
   const box = $('list');
@@ -185,7 +186,7 @@ function render(){
   for(const o of list){
     const d = cairoDay(o.at);
     if(d!==day){ day=d; html += `<div class="day"><span>${esc(d)}</span></div>`; }
-    const pay = o.cancelled ? '<span class="tag x">Cancelled</span>' : o.payment==='PAID' ? '<span class="tag ok">Paid</span>' : '<span class="tag no">Not paid</span>';
+    const pay = o.cancelled ? '<span class="tag x">Cancelled</span>' : String(o.payment).toUpperCase()==='PAID' ? '<span class="tag ok">Paid · no need to confirm</span>' : String(o.payment).toUpperCase()==='PARTIALLY_PAID' ? '<span class="tag ok">Deposit paid</span>' : '<span class="tag no">Not paid</span>';
     const ful = !o.cancelled && o.fulfillment==='FULFILLED' ? '<span class="tag f">Shipped</span>' : '';
     const items = o.items.map(i => `<div class="it"><b>${i.q>1?i.q+'× ':''}${esc(i.t)}</b>${i.v?' — '+esc(i.v):''}${i.d?`<div class="names">${esc(i.d)}</div>`:''}</div>`).join('');
     const wa = waNum(o.phone), tel = String(o.phone||'').replace(/[^\d+]/g,'');
