@@ -84,6 +84,9 @@
 
 <script>
 const FEED = 'orders.enc.json';
+const LIVE = 'https://ntfy.sh/przm-orders-7b85cc4bdb4d-d';   // instant order details from Shopify
+const START = Date.parse('2026-11-16T00:00:00+02:00');
+let live = {};   // orders that arrived instantly, before the 5-min feed has them
 const $ = id => document.getElementById(id);
 const ls = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}, del(k){try{localStorage.removeItem(k)}catch(e){}} };
 let pass = ls.get('przm_mod_pw'), feed = null, filter = 'open';
@@ -120,12 +123,53 @@ function summary(o){
   return `Order #${o.n}\n${lines.join('\n')}\nTotal: ${fmt(o.total)} EGP`;
 }
 
+function propsToDetails(props){
+  const names={}, colours={}, other=[];
+  for(const p of (props||[])){
+    const k=String(p.name||''), v=String(p.value||'').trim(); if(!k||k.startsWith('_')) continue; let m;
+    if((m=k.match(/^Name (\d+) colou?r$/i))) colours[m[1]]=v;
+    else if((m=k.match(/^Name (\d+)$/i))) names[m[1]]=v;
+    else if(/^(one name|2 names|multiple names)\.?$/i.test(k)) other.push(v);
+    else other.push(k+': '+v);
+  }
+  return [...Object.keys(names).sort((a,b)=>a-b).map(n=>'Name '+n+': '+names[n]+(colours[n]?' ('+colours[n]+')':'')), ...other].join(' · ');
+}
+function addLive(msg){
+  let d; try{ d=JSON.parse(msg); }catch(e){ return false; }
+  if(!d || !d.n || Date.parse(d.at)<START) return false;
+  live[String(d.n)] = { n:String(d.n), at:d.at, name:d.name||'', phone:d.phone||'', address:'', city:d.city||'',
+    total:Number(d.total)||0, due:Number(d.total)||0, payment:String(d.pay||'').toUpperCase(), fulfillment:'UNFULFILLED',
+    cancelled:false, note:'', live:true,
+    items:(d.items||[]).map(i=>({t:i.t, v:i.v||'', q:i.q||1, d:propsToDetails(i.p)})) };
+  return true;
+}
+async function loadLive(){
+  try{
+    const r=await fetch(LIVE+'/json?poll=1&since=24h',{cache:'no-store'});
+    const txt=await r.text();
+    txt.split('\n').forEach(l=>{ try{ const e=JSON.parse(l); if(e.event==='message') addLive(e.message); }catch(_){} });
+    render();
+  }catch(e){}
+}
+let es=null;
+function listenLive(){
+  if(es||!('EventSource' in window)) return;
+  try{
+    es=new EventSource(LIVE+'/sse');
+    es.onmessage=ev=>{ try{ const e=JSON.parse(ev.data); if(e.event==='message' && addLive(e.message)){ const o=live[JSON.parse(e.message).n]; render(); toast('New order #'+o.n); } }catch(_){} };
+  }catch(e){}
+}
+function allOrders(){
+  const have=new Set(feed.orders.map(o=>String(o.n)));
+  const extra=Object.values(live).filter(o=>!have.has(o.n));
+  return [...extra, ...feed.orders].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
+}
 function render(){
   if(!feed) return;
   $('upd').textContent = 'Updated ' + ago(feed.syncedAt);
   const q = $('q').value.trim().toLowerCase().replace(/^#/,'');
   const qd = q.replace(/\D/g,'');
-  let list = feed.orders.filter(o => {
+  let list = allOrders().filter(o => {
     if(q){
       const hay = (o.n+' '+o.name+' '+o.phone).toLowerCase();
       if(!(hay.includes(q) || (qd.length>=4 && String(o.phone).replace(/\D/g,'').includes(qd)))) return false;
@@ -149,7 +193,7 @@ function render(){
       <div class="top"><div><div class="num">#${esc(o.n)}</div><div class="time">${esc(cairoTime(o.at))}</div></div><div>${pay}${ful}</div></div>
       <div class="nm">${esc(o.name)}</div>
       <div class="addr">${esc(o.phone)}</div>
-      <div class="addr">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
+      <div class="addr">${o.live?'<span class="tag f">Just in</span> ':''}${esc(o.address)}${o.address&&o.city?' — ':''}${esc(o.city)}</div>
       ${items}
       <div class="tot"><span>Order total</span><b>${fmt(o.total)}</b></div>
       ${o.note?`<div class="note">📝 ${esc(o.note)}</div>`:''}
@@ -162,7 +206,7 @@ function render(){
   }
   box.innerHTML = html;
   box.querySelectorAll('.cp').forEach(b => b.onclick = async () => {
-    const o = feed.orders.find(x => String(x.n)===b.dataset.n);
+    const o = allOrders().find(x => String(x.n)===b.dataset.n);
     try{ await navigator.clipboard.writeText(summary(o)); toast('Order copied'); }catch(e){ toast('Copy not allowed here'); }
   });
 }
@@ -177,7 +221,7 @@ async function tryLogin(pw){
   catch(e){ $('err').textContent = e.message==='nofeed' ? 'Orders are not ready yet — try again in a few minutes.' : 'Wrong password'; return false; }
   pass = pw; ls.set('przm_mod_pw', pw);
   $('login').classList.add('hide'); $('app').classList.remove('hide'); $('err').textContent='';
-  render(); return true;
+  render(); loadLive(); listenLive(); return true;
 }
 $('go').onclick = () => tryLogin($('pw').value);
 $('pw').addEventListener('keydown', e => { if(e.key==='Enter') tryLogin($('pw').value); });
