@@ -1,0 +1,32 @@
+name: Moderator orders feed
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+concurrency:
+  group: mod-sync
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Build encrypted feed
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          MOD_PASSWORD: ${{ secrets.MOD_PASSWORD }}
+        run: node scripts/mod-sync.mjs
+      - name: Save
+        run: |
+          git config user.name "khazna-bot"
+          git config user.email "khazna-bot@users.noreply.github.com"
+          git add mod/orders.enc.json
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Update moderator feed"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 3; done
+          exit 1

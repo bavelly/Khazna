@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PRZM Orders">
+<meta name="theme-color" content="#0f172a">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="../icon-180.png">
+<link rel="icon" href="../icon-192.png">
+<title>PRZM Orders</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mut:#94a3b8;--acc:#38bdf8;--ok:#22c55e;--warn:#fbbf24;--bad:#ef4444}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Cairo,system-ui,sans-serif}
+  body{padding:calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 24px)}
+  .wrap{max-width:560px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  header h1{font-size:22px;margin:0}
+  header .sub{font-size:12px;color:var(--mut)}
+  header button{background:var(--card);color:var(--mut);border:0;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
+  input{width:100%;background:#0b1220;border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:13px;font:inherit;font-size:17px;outline:none}
+  input:focus{border-color:var(--acc)}
+  .seg{display:flex;gap:6px;margin:10px 0;overflow-x:auto}
+  .seg button{flex:none;background:var(--card);color:var(--mut);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font:inherit;font-size:14px;font-weight:600}
+  .seg button.on{border-color:var(--acc);color:var(--acc)}
+  .day{margin:18px 4px 8px;font-size:14px;color:var(--mut);font-weight:700;display:flex;justify-content:space-between}
+  .o{background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px;border:1px solid transparent}
+  .o.x{opacity:.5}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .num{font-size:22px;font-weight:800}
+  .time{font-size:12px;color:var(--mut)}
+  .nm{font-size:17px;font-weight:700;margin-top:4px}
+  .addr{font-size:13px;color:var(--mut);margin-top:2px}
+  .btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .btns a,.btns button{flex:1;min-width:90px;text-align:center;text-decoration:none;border:0;border-radius:10px;padding:10px 8px;font:inherit;font-weight:700;font-size:14px;color:#fff;cursor:pointer}
+  .wa{background:#16a34a} .call{background:#0e7490} .cp{background:#334155}
+  .it{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
+  .it b{font-size:15px}
+  .names{color:var(--warn);font-weight:700;font-size:15px}
+  .tot{margin-top:10px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  .tot b{font-size:18px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;margin-left:4px;white-space:nowrap}
+  .tag.ok{background:#14532d;color:#86efac} .tag.no{background:#422006;color:#fcd34d} .tag.x{background:#450a0a;color:#fca5a5} .tag.f{background:#1e3a8a;color:#bfdbfe}
+  .note{font-size:13px;color:var(--mut);margin-top:6px}
+  .msg{text-align:center;color:var(--mut);padding:24px;font-size:14px}
+  .login{max-width:360px;margin:18vh auto 0;background:var(--card);border-radius:18px;padding:22px;text-align:center}
+  .login h2{margin:0 0 4px} .login p{color:var(--mut);font-size:14px;margin:0 0 14px}
+  .login button{width:100%;margin-top:12px;background:var(--acc);color:#04202d;border:0;border-radius:12px;padding:13px;font:inherit;font-size:16px;font-weight:800}
+  .err{color:#fca5a5;font-size:14px;min-height:20px;margin-top:8px}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:#020617;border:1px solid var(--line);padding:10px 18px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.on{opacity:1}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div id="login" class="login hide">
+  <h2>PRZM Orders</h2>
+  <p>Enter the password to see orders.</p>
+  <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+  <button id="go">Open</button>
+  <div class="err" id="err"></div>
+</div>
+
+<div id="app" class="wrap hide">
+  <header>
+    <div><h1>PRZM Orders</h1><div class="sub" id="upd">Loading…</div></div>
+    <div><button id="ref">↻</button> <button id="out">Log out</button></div>
+  </header>
+  <input id="q" type="search" placeholder="🔍 Order #, name or phone" autocomplete="off">
+  <div class="seg" id="seg">
+    <button data-f="open" class="on">To confirm</button>
+    <button data-f="paid">Paid</button>
+    <button data-f="all">All</button>
+  </div>
+  <div id="list"><div class="msg">Loading…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const FEED = 'orders.enc.json';
+const $ = id => document.getElementById(id);
+const ls = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}, del(k){try{localStorage.removeItem(k)}catch(e){}} };
+let pass = ls.get('przm_mod_pw'), feed = null, filter = 'open';
+const fmt = n => (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){ const el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),1800); }
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+
+async function decrypt(file, pw){
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(file.salt), iterations:file.iter, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(file.iv)}, key, b64(file.data));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+async function load(pw){
+  const r = await fetch(FEED + '?t=' + Date.now(), {cache:'no-store'});
+  if(!r.ok) throw new Error('nofeed');
+  return decrypt(await r.json(), pw);
+}
+
+function waNum(p){
+  let d = String(p||'').replace(/\D/g,'');
+  if(d.startsWith('0020')) d = d.slice(2);
+  if(d.length===11 && d.startsWith('01')) d = '2' + d;
+  else if(d.length===10 && d.startsWith('1')) d = '20' + d;
+  return d;
+}
+const cairoDay = iso => new Date(iso).toLocaleDateString('en-GB',{timeZone:'Africa/Cairo',weekday:'short',day:'numeric',month:'short'});
+const cairoTime = iso => new Date(iso).toLocaleTimeString('en-GB',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit',hour12:true});
+const ago = iso => { const m=Math.round((Date.now()-new Date(iso))/60000); return m<1?'just now':m<60?m+' min ago':Math.round(m/60)+' h ago'; };
+
+function summary(o){
+  const lines = o.items.map(i => `• ${i.q>1?i.q+'× ':''}${i.t}${i.v?' — '+i.v:''}${i.d?'\n   '+i.d:''}`);
+  return `Order #${o.n}\n${lines.join('\n')}\nTotal: ${fmt(o.total)} EGP`;
+}
+
+function render(){
+  if(!feed) return;
+  $('upd').textContent = 'Updated ' + ago(feed.syncedAt);
+  const q = $('q').value.trim().toLowerCase().replace(/^#/,'');
+  const qd = q.replace(/\D/g,'');
+  let list = feed.orders.filter(o => {
+    if(q){
+      const hay = (o.n+' '+o.name+' '+o.phone).toLowerCase();
+      if(!(hay.includes(q) || (qd.length>=4 && String(o.phone).replace(/\D/g,'').includes(qd)))) return false;
+      return true;
+    }
+    if(filter==='open') return !o.cancelled && o.payment!=='PAID' && o.fulfillment!=='FULFILLED';
+    if(filter==='paid') return o.payment==='PAID';
+    return true;
+  });
+  const box = $('list');
+  if(!list.length){ box.innerHTML = '<div class="msg">'+(q?'No order matches "'+esc(q)+'"':'No orders here yet')+'</div>'; return; }
+  let html = '', day = '';
+  for(const o of list){
+    const d = cairoDay(o.at);
+    if(d!==day){ day=d; html += `<div class="day"><span>${esc(d)}</span></div>`; }
+    const pay = o.cancelled ? '<span class="tag x">Cancelled</span>' : o.payment==='PAID' ? '<span class="tag ok">Paid</span>' : '<span class="tag no">Not paid</span>';
+    const ful = !o.cancelled && o.fulfillment==='FULFILLED' ? '<span class="tag f">Shipped</span>' : '';
+    const items = o.items.map(i => `<div class="it"><b>${i.q>1?i.q+'× ':''}${esc(i.t)}</b>${i.v?' — '+esc(i.v):''}${i.d?`<div class="names">${esc(i.d)}</div>`:''}</div>`).join('');
+    const wa = waNum(o.phone), tel = String(o.phone||'').replace(/[^\d+]/g,'');
+    html += `<div class="o${o.cancelled?' x':''}">
+      <div class="top"><div><div class="num">#${esc(o.n)}</div><div class="time">${esc(cairoTime(o.at))}</div></div><div>${pay}${ful}</div></div>
+      <div class="nm">${esc(o.name)}</div>
+      <div class="addr">${esc(o.phone)}</div>
+      <div class="addr">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
+      ${items}
+      <div class="tot"><span>Order total</span><b>${fmt(o.total)}</b></div>
+      ${o.note?`<div class="note">📝 ${esc(o.note)}</div>`:''}
+      <div class="btns">
+        ${wa?`<a class="wa" target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp</a>`:''}
+        ${tel?`<a class="call" href="tel:${tel}">Call</a>`:''}
+        <button class="cp" data-n="${esc(o.n)}">Copy order</button>
+      </div>
+    </div>`;
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('.cp').forEach(b => b.onclick = async () => {
+    const o = feed.orders.find(x => String(x.n)===b.dataset.n);
+    try{ await navigator.clipboard.writeText(summary(o)); toast('Order copied'); }catch(e){ toast('Copy not allowed here'); }
+  });
+}
+
+async function refresh(silent){
+  try{ feed = await load(pass); render(); }
+  catch(e){ if(!silent) toast(e.message==='nofeed'?'Orders not ready yet':'Could not load'); if(!feed) $('list').innerHTML='<div class="msg">Could not load orders. Pull to refresh or tap ↻.</div>'; }
+}
+async function tryLogin(pw){
+  $('err').textContent='Checking…';
+  try{ feed = await load(pw); }
+  catch(e){ $('err').textContent = e.message==='nofeed' ? 'Orders are not ready yet — try again in a few minutes.' : 'Wrong password'; return false; }
+  pass = pw; ls.set('przm_mod_pw', pw);
+  $('login').classList.add('hide'); $('app').classList.remove('hide'); $('err').textContent='';
+  render(); return true;
+}
+$('go').onclick = () => tryLogin($('pw').value);
+$('pw').addEventListener('keydown', e => { if(e.key==='Enter') tryLogin($('pw').value); });
+$('out').onclick = () => { ls.del('przm_mod_pw'); pass=null; feed=null; $('app').classList.add('hide'); $('login').classList.remove('hide'); $('pw').value=''; };
+$('ref').onclick = () => refresh();
+$('q').addEventListener('input', render);
+document.querySelectorAll('#seg button').forEach(b => b.onclick = () => { filter=b.dataset.f; document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+document.addEventListener('visibilitychange', () => { if(!document.hidden && pass) refresh(true); });
+setInterval(() => { if(!document.hidden && pass) refresh(true); }, 60000);
+
+if(pass){ tryLogin(pass).then(ok => { if(!ok){ ls.del('przm_mod_pw'); $('login').classList.remove('hide'); } }); }
+else $('login').classList.remove('hide');
+</script>
+</body>
+</html>
