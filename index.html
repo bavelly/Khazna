@@ -123,6 +123,7 @@
         <button id="dAdd">+ Add</button>
       </div>
     </div>
+    <div id="dErr" class="msg hide" style="color:#fca5a5"></div>
     <h3><span>Orders with a deposit</span><span id="dShown"></span></h3>
     <div class="list" id="dList"><div class="msg">Loading…</div></div>
   </div>
@@ -230,7 +231,7 @@ async function loadOrders(force){
   }catch(e){}
 }
 // COD to collect: once the deposit is on Shopify, Shopify's unpaid amount already excludes it
-function collectFor(o,dep){ const due=Number(o.due)||0, dv=dep?Number(dep.amount)||0:0; const c = dep&&dep.shopAt ? Math.min(due,(Number(o.total)||0)-dv) : due-dv; return Math.max(0,Math.round(c*100)/100); }
+function collectFor(o,dep){ const due=Number(o.due)||0, dv=dep?Number(dep.amount)||0:0; const c = dep&&dep.shopAt ? due : due-dv; return Math.max(0,Math.round(c*100)/100); }
 function shopState(dep){ return !dep?'':dep.shopAt?'<span class="tag ok">Deposit on Shopify ✓</span>':dep.shopErr?'<span class="tag x">Not on Shopify</span>':dep.done?'':'<span class="tag no">⏳ Sending to Shopify…</span>'; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function detailsHTML(num){
@@ -248,7 +249,7 @@ function detailsHTML(num){
     <div class="dm">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
     ${items}
     ${(()=>{ const dep=(state.deposits||[]).find(d=>String(d.order)===String(num)); const dv=dep?Number(dep.amount)||0:0; const col=collectFor(o,dep);
-      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b> ${shopState(dep)}`:''}${dep&&dep.shopErr?`<div class="dm" style="color:#fca5a5">⚠ ${esc(dep.shopErr)} — fix the COD on Shopify by hand</div>`:''}</div>
+      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b> ${shopState(dep)}`:''}${dep&&dep.shopErr?`<div class="dm" style="color:#fca5a5">⚠ ${esc(dep.shopErr)}</div>`:''}</div>
       <div class="col">🚚 Collect by courier <b>${fmt(col)}</b></div>`; })()}
     ${o.note?`<div class="dm">📝 ${esc(o.note)}</div>`:''}
     ${link}
@@ -365,6 +366,7 @@ let dFilter='all';
 const normOrd = s => String(s||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[^\dA-Za-z-]/g,'');
 function renderDep(){
   const deps=state.deposits||[];
+  $('dErr').textContent=state.shopSyncError?'⚠ Shopify: '+state.shopSyncError:''; $('dErr').classList.toggle('hide',!state.shopSyncError);
   let tot=0,open=0; deps.forEach(d=>{ const a=Number(d.amount)||0; tot+=a; if(!d.done) open+=a; });
   $('dTot').textContent=fmt(tot); $('dOpen').textContent=fmt(open); $('dCnt').textContent=deps.length;
   const q=normOrd($('dq').value);
