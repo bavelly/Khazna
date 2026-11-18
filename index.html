@@ -229,6 +229,9 @@ async function loadOrders(force){
     const j=await r.json(); orders=JSON.parse(b64dec(j.content)); ordersAt=Date.now(); renderDep();
   }catch(e){}
 }
+// COD to collect: once the deposit is on Shopify, Shopify's unpaid amount already excludes it
+function collectFor(o,dep){ const due=Number(o.due)||0, dv=dep?Number(dep.amount)||0:0; const c = dep&&dep.shopAt ? Math.min(due,(Number(o.total)||0)-dv) : due-dv; return Math.max(0,Math.round(c*100)/100); }
+function shopState(dep){ return !dep?'':dep.shopAt?'<span class="tag ok">Deposit on Shopify ✓</span>':dep.shopErr?'<span class="tag x">Not on Shopify</span>':dep.done?'':'<span class="tag no">⏳ Sending to Shopify…</span>'; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function detailsHTML(num){
   const o = orders && orders.orders && orders.orders[String(num)];
@@ -244,8 +247,8 @@ function detailsHTML(num){
     <div class="dm">${esc(o.date)}${o.phone?` · <a class="ph" href="tel:${tel}">${esc(o.phone)}</a>`:''}</div>
     <div class="dm">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
     ${items}
-    ${(()=>{ const dep=(state.deposits||[]).find(d=>String(d.order)===String(num)); const dv=dep?Number(dep.amount)||0:0; const col=Math.max(0,Math.round(((Number(o.due)||0)-dv)*100)/100);
-      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b>`:''}</div>
+    ${(()=>{ const dep=(state.deposits||[]).find(d=>String(d.order)===String(num)); const dv=dep?Number(dep.amount)||0:0; const col=collectFor(o,dep);
+      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b> ${shopState(dep)}`:''}${dep&&dep.shopErr?`<div class="dm" style="color:#fca5a5">⚠ ${esc(dep.shopErr)} — fix the COD on Shopify by hand</div>`:''}</div>
       <div class="col">🚚 Collect by courier <b>${fmt(col)}</b></div>`; })()}
     ${o.note?`<div class="dm">📝 ${esc(o.note)}</div>`:''}
     ${link}
@@ -381,14 +384,14 @@ function renderDep(){
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
     const od = orders && orders.orders && orders.orders[String(d.order)];
-    const colTxt = od ? ' · Collect '+fmt(Math.max(0,(Number(od.due)||0)-(Number(d.amount)||0))) : '';
+    const colTxt = (od ? ' · Collect '+fmt(collectFor(od,d)) : '') + (d.done?'':d.shopAt?' · Shopify ✓':d.shopErr?' · ⚠ Not on Shopify':' · ⏳ Shopify');
     w.textContent = (d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet') + colTxt;
     const sl=document.createElement('button'); sl.className='shop'; sl.style.border='0'; sl.textContent=openDet.has(d.id)?'▲ Hide details':'🛍 Order details';
     sl.onclick=()=>{ openDet.has(d.id)?openDet.delete(d.id):openDet.add(d.id); loadOrders(); renderDep(); };
     i.append(o,w,sl);
     const a=document.createElement('div'); a.className='a'; a.textContent=fmt(d.amount);
     const x=document.createElement('button'); x.className='x'; x.textContent='✕';
-    x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?'+((state.tx||[]).some(t=>t.depId===d.id)?' It will also be removed from Cash.':''), s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); s.tx=s.tx.filter(t=>t.depId!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
+    x.onclick=()=>confirmDel('Delete deposit for order #'+d.order+' ('+fmt(d.amount)+')?'+((state.tx||[]).some(t=>t.depId===d.id)?' It will also be removed from Cash.':'')+(d.shopAt?' ⚠ The payment on Shopify stays — remove/refund it there.':''), s=>{ s.deposits=s.deposits.filter(t=>t.id!==d.id); s.tx=s.tx.filter(t=>t.depId!==d.id); }, 'Delete deposit #'+d.order+' ('+(myName||'')+')');
     el.append(c,i,a,x); list.appendChild(el);
     if(openDet.has(d.id) || (q && String(d.order)===q && shown.length===1)){ const dv=document.createElement('div'); dv.innerHTML=detailsHTML(d.order); list.appendChild(dv.firstElementChild); }
   });
@@ -414,7 +417,7 @@ async function addDep(){
   const rec={id:'d-'+order+'-'+Date.now().toString(36),order,amount,done:false,doneBy:'',doneAt:0,by:myName||'',at:Date.now()};
   try{
     const ok=await mutate(s=>{ if(!s.deposits.some(d=>String(d.order)===order)){ s.deposits.push(rec); s.tx.push({id:'tx-'+rec.id,amount,type:'+',note:'Deposit #'+order,by:myName||'',at:rec.at,depId:rec.id}); } }, 'Deposit #'+order+' '+amount+' ('+(myName||'')+')');
-    if(ok){ openDet.add(rec.id); $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓ · +'+fmt(amount)+' to Cash'); } else toast('Save failed — try again');
+    if(ok){ openDet.add(rec.id); $('dOrd').value=''; $('dAmt').value=''; $('dq').value=''; toast('Added #'+order+' ✓ · +'+fmt(amount)+' to Cash · Shopify in a few min'); } else toast('Save failed — try again');
   }catch(e){ toast('Save failed — check your internet'); }
   busy=false; $('dAdd').disabled=false; render();
 }
