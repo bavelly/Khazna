@@ -232,7 +232,7 @@ async function loadOrders(force){
 }
 // COD to collect: once the deposit is on Shopify, Shopify's unpaid amount already excludes it
 function collectFor(o,dep){ const due=Number(o.due)||0, dv=dep?Number(dep.amount)||0:0; const c = dep&&dep.shopAt ? due : due-dv; return Math.max(0,Math.round(c*100)/100); }
-function shopState(dep){ return !dep?'':dep.shopAt?'<span class="tag ok">Deposit on Shopify ✓</span>':dep.shopErr?'<span class="tag x">Not on Shopify</span>':dep.done?'':'<span class="tag no">⏳ Sending to Shopify…</span>'; }
+function shopState(dep){ return !dep?'':dep.bostaOk?'<span class="tag ok">COD on Bosta ✓</span>':dep.shopAt?'<span class="tag ok">Deposit on Shopify ✓</span>':dep.shopErr?'<span class="tag x">Not on Shopify</span>':dep.done?'':'<span class="tag no">⏳ Sending to Shopify…</span>'; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function detailsHTML(num){
   const o = orders && orders.orders && orders.orders[String(num)];
@@ -249,7 +249,7 @@ function detailsHTML(num){
     <div class="dm">${esc(o.address)}${o.city?' — '+esc(o.city):''}</div>
     ${items}
     ${(()=>{ const dep=(state.deposits||[]).find(d=>String(d.order)===String(num)); const dv=dep?Number(dep.amount)||0:0; const col=collectFor(o,dep);
-      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b> ${shopState(dep)}`:''}${dep&&dep.shopErr?`<div class="dm" style="color:#fca5a5">⚠ ${esc(dep.shopErr)}</div>`:''}</div>
+      return `<div class="it">Order total <b>${fmt(o.total)}</b>${o.due!==o.total?` · Unpaid on Shopify <b>${fmt(o.due)}</b>`:''}${dv?`<br>Deposit paid <b style="color:#fbbf24">− ${fmt(dv)}</b> ${shopState(dep)}`:''}${dep&&dep.shopErr&&!dep.bostaOk?`<div class="dm" style="color:#fca5a5">⚠ ${esc(dep.shopErr)}</div>`:''}</div>
       <div class="col">🚚 Collect by courier <b>${fmt(col)}</b></div>`; })()}
     ${o.note?`<div class="dm">📝 ${esc(o.note)}</div>`:''}
     ${link}
@@ -386,7 +386,7 @@ function renderDep(){
     const o=document.createElement('div'); o.className='o'; o.textContent='#'+d.order;
     const w=document.createElement('div'); w.className='w';
     const od = orders && orders.orders && orders.orders[String(d.order)];
-    const colTxt = (od ? ' · Collect '+fmt(collectFor(od,d)) : '') + (d.done?'':d.shopAt?' · Shopify ✓':d.shopErr?' · ⚠ Not on Shopify':' · ⏳ Shopify');
+    const colTxt = (od ? ' · Collect '+fmt(collectFor(od,d)) : '') + (d.done?'':d.bostaOk?' · Bosta ✓':d.shopAt?' · Shopify ✓':d.shopErr?' · ⚠ Not on Shopify':' · ⏳ Shopify');
     w.textContent = (d.done ? 'Shipped'+(d.doneBy&&d.doneBy!=='Notebook'?' · '+d.doneBy+' · '+when(d.doneAt):'') : 'Not shipped yet') + colTxt;
     const sl=document.createElement('button'); sl.className='shop'; sl.style.border='0'; sl.textContent=openDet.has(d.id)?'▲ Hide details':'🛍 Order details';
     sl.onclick=()=>{ openDet.has(d.id)?openDet.delete(d.id):openDet.add(d.id); loadOrders(); renderDep(); };
